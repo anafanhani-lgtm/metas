@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acompanhamento de Metas — 1º Semestre 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:       #0F1E3C;
+    --cyan:       #4FC3C3;
+    --white:      #FFFFFF;
+    --bg:         #F0F3F9;
+    --border:     #DDE3EE;
+    --green:      #0E9E5B;  --green-bg:  #E6F7EF;
+    --orange:     #D97706;  --orange-bg: #FEF3E2;
+    --blue:       #2563EB;  --blue-bg:   #EEF4FF;
+    --gray:       #8A96AB;  --gray-light:#F4F6FA;
+    --text:       #1A2540;  --text-muted:#5A6478;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── SELECTOR BAR ── */
+  .selector-bar {
+    background: #07111F;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 44px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .selector-bar::-webkit-scrollbar { display: none; }
+  .selector-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-right: 10px;
+    white-space: nowrap;
+  }
+  .sel-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 20px;
+    padding: 4px 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .sel-btn:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.11); }
+  .sel-btn.active { color: var(--navy); background: var(--cyan); border-color: var(--cyan); font-weight: 600; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--navy);
+    padding: 0 40px;
+    display: flex;
+    align-items: stretch;
+    min-height: 64px;
+    position: sticky;
+    top: 44px;
+    z-index: 99;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.22);
+  }
+  .header-left {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 10px 26px 10px 0;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    min-width: 190px;
+  }
+  .header-semestre { font-size: 10px; font-weight: 600; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+  .header-title    { font-size: 18px; font-weight: 700; color: var(--white); }
+  .header-tabs     { display: flex; align-items: flex-end; gap: 2px; padding: 0 20px; flex: 1; }
+  .tab-btn {
+    font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 500;
+    color: rgba(255,255,255,0.45); background: none; border: none;
+    border-bottom: 3px solid transparent; padding: 20px 14px 14px;
+    cursor: pointer; transition: all 0.16s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.8); }
+  .tab-btn.active { color: var(--white); border-bottom-color: var(--cyan); }
+  .header-right {
+    display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+    padding: 10px 0 10px 22px;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    min-width: 185px;
+  }
+  .header-role { font-size: 10px; font-weight: 600; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+  .header-name { font-size: 17px; font-weight: 700; color: var(--white); }
+
+  /* ── CONTAINER ── */
+  .container { max-width: 1280px; margin: 0 auto; padding: 26px 36px 60px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .manager-view { display: none; }
+  .manager-view.active { display: block; }
+
+  /* ── SUMMARY BAR ── */
+  .summary-bar {
+    display: flex; background: var(--white); border-radius: 10px;
+    border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(15,30,60,0.06);
+    overflow: hidden; margin-bottom: 18px;
+  }
+  .summary-item { flex: 1; padding: 13px 18px; border-right: 1px solid var(--border); text-align: center; }
+  .summary-item:last-child { border-right: none; }
+  .summary-num   { font-size: 24px; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+  .summary-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); }
+  .summary-pct   { font-size: 12px; font-weight: 400; opacity: 0.6; margin-left: 2px; }
+  .num-total    { color: var(--navy); }
+  .num-avancada { color: var(--green); }
+  .num-ontrack  { color: var(--blue); }
+  .num-atrasada { color: var(--orange); }
+
+  /* ── DIVIDERS ── */
+  .section-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--text-muted); margin: 26px 0 13px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .con-divider { display: flex; align-items: center; gap: 12px; margin: 28px 0 14px; }
+  .con-divider-line { flex:1; height:2px; background:var(--border); }
+  .con-divider-pill {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 14px; border-radius: 20px; white-space: nowrap;
+  }
+  .pill-gerais      { background: var(--navy); color: var(--white); }
+  .pill-especificas { background: var(--cyan); color: var(--navy); }
+
+  /* ── TABLE ── */
+  .goals-table {
+    width: 100%; border-collapse: collapse; background: var(--white);
+    border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15,30,60,0.07), 0 4px 14px rgba(15,30,60,0.04);
+    margin-bottom: 6px;
+  }
+  .goals-table thead tr { background: var(--navy); }
+  .goals-table thead th {
+    padding: 10px 13px; font-size: 10.5px; font-weight: 600;
+    color: rgba(255,255,255,0.6); letter-spacing: 1.2px; text-transform: uppercase;
+    text-align: center; white-space: nowrap;
+  }
+  .goals-table thead th.col-meta { text-align: left; }
+  .goals-table thead th.cur { background: rgba(79,195,195,0.18); color: var(--cyan); }
+  .goals-table thead th.fut { opacity: 0.38; }
+
+  .goals-table tbody tr.goal-row { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+  .goals-table tbody tr.goal-row:hover { background: #f8fafd; }
+  .goals-table tbody tr.goal-row:last-child { border-bottom: none; }
+  .goals-table td { padding: 12px 13px; vertical-align: middle; }
+
+  .meta-text { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.45; }
+
+  /* Tags */
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .tag  { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.3px; }
+  .tag-cx           { background:#E0F8F4; color:#0E9080; }
+  .tag-gestao       { background:#F8F4EC; color:#92400E; }
+  .tag-fundos       { background:#F3EEFF; color:#7C3AED; }
+  .tag-performance  { background:#FFF0E8; color:#C05621; }
+  .tag-transferencia{ background:#EEF4FF; color:#2563EB; }
+  .tag-secundario   { background:#EEF4FF; color:#1D4ED8; }
+  .tag-plataforma   { background:#F0FFFE; color:#0F766E; }
+  .tag-vendas       { background:#FFF7ED; color:#C2410C; }
+  .tag-contempladas { background:#FAF5FF; color:#7E22CE; }
+  .tag-financas     { background:#F0FDF4; color:#166534; }
+  .tag-pessoas      { background:#FFF1F2; color:#9F1239; }
+  .tag-inovacao     { background:#F5F3FF; color:#5B21B6; }
+  .tag-juridico     { background:#F1F5F9; color:#334155; }
+  .tag-design       { background:#FDE8F0; color:#BE185D; }
+  .tag-novos        { background:#ECFDF5; color:#065F46; }
+
+  /* Month cells */
+  .mc { text-align:center; font-family:'DM Mono',monospace; font-size:12px; font-weight:500; min-width:74px; }
+  .mc.empty { color:var(--border); font-size:15px; background:#fafbfd; }
+  .mc.tbd   { color:var(--gray); font-size:11px; font-weight:600; letter-spacing:1px; }
+  .mc.txtfree { font-family:'DM Sans',sans-serif; font-size:11px; color:var(--text-muted); line-height:1.4; text-align:left; max-width:180px; }
+  .vl { display:block; line-height:1.55; }
+  .vo { color:var(--orange); } .vb { color:var(--blue); } .vg { color:var(--green); } .vz { color:var(--gray); font-size:11px; }
+
+  /* Status */
+  .sc { text-align:center; min-width:52px; }
+  .si { display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px; border-radius:50%; font-size:13px; }
+  .s-av { background:var(--green-bg);  color:var(--green); }
+  .s-on { background:var(--blue-bg);   color:var(--blue); }
+  .s-at { background:var(--orange-bg); color:var(--orange); }
+
+  .empty-metas {
+    background: var(--white); border-radius:10px; border:1px solid var(--border);
+    padding:20px; text-align:center; color:var(--gray); font-size:13px; margin-bottom:6px;
+    font-style: italic;
+  }
+
+  @media(max-width:900px){
+    .selector-bar,.header { padding:0 16px; }
+    .container { padding:18px 14px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════
+//  ✏️  CONFIGURAÇÃO GLOBAL
+// ════════════════════════════════════════════════════════════════════════
+const SEMESTRE = "1º Semestre de 2026";
+const MES_ATUAL = 1; // 1=Jan 2=Fev 3=Mar 4=Abr 5=Mai 6=Jun
+const MESES       = ["jan","fev","mar","abr","mai","jun"];
+const MESES_LABEL = ["JAN","FEV","MAR","ABR","MAI","JUN"];
+
+// Status padrão enquanto não há dados: "atrasada" | "ontrack" | "avancada"
+const S_VAZIO = { jan:null, fev:null, mar:null, abr:null, mai:null, jun:null };
+
+// ════════════════════════════════════════════════════════════════════════
+//  ✏️  METAS GERAIS (pool global — referenciadas pelos times via chave)
+//      Cada meta tem uma chave única, o texto, e quais times têm peso.
+// ════════════════════════════════════════════════════════════════════════
+const METAS_GERAIS_POOL = {
+
+  "60k_cotas": {
+    meta: "Atingir 60 mil cotas pagantes na plataforma até junho",
+    times: ["gestao","performance","transferencia","plataforma","design","novos"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "7_7k_novos_parceiros": {
+    meta: "Atingir 7.7k cotas pagantes em novos parceiros (incluindo Caixa)",
+    times: ["plataforma","novos"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "reduzir_erros": {
+    meta: "Reduzir erros e cancelamentos (DocuSign) + pendências CAAS em 20% vs semestre anterior",
+    times: ["performance","transferencia","plataforma","design"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "prazo_pgto": {
+    meta: "Reduzir prazo de pagamento médio ponderado em 20%, garantindo 90% dos clientes pagos dentro do prazo",
+    times: ["cx","performance","transferencia","secundario_h","secundario_l"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "antecipacao_contemplacao": {
+    meta: "Melhorar a antecipação média de contemplação para 0 dias nos últimos 3 meses",
+    times: ["gestao","fundos","secundario_h","secundario_l"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "antecipacao_resgate": {
+    meta: "Melhorar a antecipação média de resgate para 5 dias nos últimos 3 meses",
+    times: ["gestao","secundario_h","secundario_l"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "cotas_filhas_90d": {
+    meta: "85% de cotas filhas não podem ficar mais que 90 dias na carteira dos fundos sem juntar",
+    times: ["fundos","secundario_h","secundario_l"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "alocar_296mm": {
+    meta: "Alocar R$296 milhões no secundário",
+    times: ["gestao","fundos","transferencia","secundario_h","secundario_l","novos"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "alocar_116mm": {
+    meta: "Alocar R$116 milhões em investimento em grupo",
+    times: ["gestao","fundos","transferencia"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "conversao_5pct": {
+    meta: "Crescimento de 5% de conversão por safra em até 30 dias",
+    times: ["cx","performance","plataforma"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "taxa_abertura_8pct": {
+    meta: "Aumentar a taxa de abertura/visualização das cotas na plataforma em 8%",
+    times: ["cx","performance","plataforma","design"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "custo_mensageria": {
+    meta: "Reduzir custo de mensageria por cota transacionada em 40% vs semestre anterior",
+    times: ["performance","design"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "crm_mensageria": {
+    meta: "Garantir que todo o fluxo de mensageria, inclusive email seja feito no CRM até maio",
+    times: ["design"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "60k_leads": {
+    meta: "Atender 60 mil leads via sistema",
+    times: ["performance","design","novos"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "96k_receita": {
+    meta: "Atingir receita mínima de R$96mil no semestre com pelo menos 3 parceiros pagantes",
+    times: ["design","novos"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "4_parceiros_plataforma": {
+    meta: "Chegar em junho com pelo menos 4 parceiros pagantes rodando na plataforma",
+    times: ["design","novos","contempladas"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "24mm_credito": {
+    meta: "Vender até junho 24 milhões de crédito, sendo 10MM dentro da plataforma",
+    times: ["transferencia","contempladas","novos","inovacao"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "6_parceiros_investimento": {
+    meta: "Chegar em junho fazendo investimento em pelo menos 6 parceiros, sendo que 2 parceiros aloquem mais do que R$20MM cada",
+    times: ["fundos","novos","inovacao"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "share_leiloes": {
+    meta: "Aumentar o share de vitórias em leilões (Porto / Santander / Caixa) para ≥ 82% até junho",
+    times: ["fundos","secundario_h","secundario_l"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "nps_83": {
+    meta: "NPS +83",
+    times: ["cx","performance","transferencia"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "reclame_aqui": {
+    meta: "Reclame Aqui Ótimo durante todos os meses",
+    times: ["cx","transferencia"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "fidc_proprietario": {
+    meta: "FIDC Proprietário Consorciei para consolidar posição de cotas de consórcio operacional, com carteira cedida até o final de março",
+    times: ["secundario_h","secundario_l","financas","juridico"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "quitacao_desconto": {
+    meta: "Explorar com pelo menos 3 ADMs (documentar processos) e validar o modelo jurídico e operacional de Quitação com Desconto com 1 ADM até março",
+    times: ["inovacao","juridico"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "5_transacoes_lance": {
+    meta: "Realizar ao menos 5 transações de Financiamento de Lance e Entrada",
+    times: ["contempladas"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+  "nps_83_cx": {
+    meta: "NPS +83",
+    times: ["cx","performance","transferencia"],
+    status: "atrasada", valores: {...S_VAZIO},
+  },
+};
+
+// ════════════════════════════════════════════════════════════════════════
+//  ✏️  GERENTES
+// ════════════════════════════════════════════════════════════════════════
+const GERENTES = [
+
+  // ── BERETTA ──────────────────────────────────────────────────────────
+  {
+    id: "beretta", nome: "Guilherme Beretta", cargo: "Gerente de Operações", modo: "multi",
+    times: [
+      {
+        nome:"CX", chave:"cx",
+        metas_gerais_keys: ["prazo_pgto","conversao_5pct","taxa_abertura_8pct","nps_83","reclame_aqui"],
+        metas_individuais: [
+          { meta:"Manter o CSAT de Atendimento IA superior a 95% e humano 80%", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Manter nível de transbordo médio para humanos até 8% na média do semestre", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"NPS +83", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Reclame Aqui Ótimo durante todos os meses", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+      {
+        nome:"Gestão", chave:"gestao",
+        metas_gerais_keys: ["60k_cotas","antecipacao_contemplacao","antecipacao_resgate","alocar_296mm","alocar_116mm"],
+        metas_individuais: [
+          { meta:"Fluxo de caixa de repasses vendidas primeira semana de cada mês — Começando em Março", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Comunicação informativa de resgates e retorno automatizada até abril", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Ter 95% das taxas de transferência via boleto pagas em até 4du após a aquisição", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"95% das parcelas pagas em dia", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Mapeamento e controle de prazos de contemplação de investimento em grupo até final de março", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+      {
+        nome:"Gestão de Fundos", chave:"fundos",
+        metas_gerais_keys: ["antecipacao_contemplacao","cotas_filhas_90d","alocar_296mm","alocar_116mm","6_parceiros_investimento","share_leiloes"],
+        metas_individuais: [
+          { meta:"Conseguir alocar R$72MM de uma única ADM independente no semestre, sem que em junho tenha sido usado caixa da Consorciei e grupinho", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Fazer nova captação de pelo menos R$50MM no FIDC II a custo ponderado 0,75pp menor do que última oferta", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Ter projeção de Fluxo de Caixa e Carteira e sub com forecast, capaz de calcular a receita futura de cada fundo até junho", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+      {
+        nome:"Performance", chave:"performance",
+        metas_gerais_keys: ["60k_cotas","reduzir_erros","prazo_pgto","conversao_5pct","taxa_abertura_8pct","custo_mensageria","60k_leads","nps_83"],
+        metas_individuais: [],
+      },
+      {
+        nome:"Transferência", chave:"transferencia",
+        metas_gerais_keys: ["60k_cotas","reduzir_erros","prazo_pgto","alocar_296mm","24mm_credito","alocar_116mm","nps_83","reclame_aqui"],
+        metas_individuais: [],
+      },
+    ],
+  },
+
+  // ── HELTON ───────────────────────────────────────────────────────────
+  {
+    id: "helton", nome: "Helton Volasco", cargo: "Gerente de Produto", modo: "multi",
+    times: [
+      {
+        nome:"Squad Secundário", chave:"secundario_h",
+        metas_gerais_keys: ["prazo_pgto","antecipacao_contemplacao","antecipacao_resgate","cotas_filhas_90d","alocar_296mm","fidc_proprietario","share_leiloes"],
+        metas_individuais: [],
+      },
+      {
+        nome:"Squad Plataforma", chave:"plataforma",
+        metas_gerais_keys: ["60k_cotas","7_7k_novos_parceiros","reduzir_erros","conversao_5pct","taxa_abertura_8pct"],
+        metas_individuais: [],
+      },
+      {
+        nome:"Squad Contempladas", chave:"contempladas",
+        metas_gerais_keys: ["4_parceiros_plataforma","24mm_credito","5_transacoes_lance"],
+        metas_individuais: [],
+      },
+      {
+        nome:"Squad Vendas", chave:"vendas",
+        metas_gerais_keys: ["60k_leads","96k_receita"],
+        metas_individuais: [],
+      },
+    ],
+    metas_individuais_gerente: [
+      { meta:"Ter em junho 80% das histórias com test cases prontos no momento da planning", status:"atrasada", valores:{...S_VAZIO} },
+      { meta:"Reduzir o tempo de execução dos ciclos de testes dos principais fluxos do negócio", status:"atrasada", valores:{...S_VAZIO} },
+      { meta:"Garantir que 100% dos problemas em campo (BUGs) entrem nas esteiras de testes para que não voltem a acontecer", status:"atrasada", valores:{...S_VAZIO} },
+    ],
+    label_ind_gerente: "Metas de Qualidade — Produto",
+  },
+
+  // ── LUIZ ─────────────────────────────────────────────────────────────
+  {
+    id: "luiz", nome: "Luiz Fernando", cargo: "Gerente de Tecnologia", modo: "multi",
+    times: [
+      {
+        nome:"Squad Secundário", chave:"secundario_l",
+        metas_gerais_keys: ["prazo_pgto","antecipacao_contemplacao","antecipacao_resgate","cotas_filhas_90d","alocar_296mm","fidc_proprietario","share_leiloes"],
+        metas_individuais: [],
+      },
+      {
+        nome:"Squad Plataforma", chave:"plataforma",
+        metas_gerais_keys: ["60k_cotas","7_7k_novos_parceiros","reduzir_erros","conversao_5pct","taxa_abertura_8pct"],
+        metas_individuais: [],
+      },
+      {
+        nome:"Squad Contempladas", chave:"contempladas",
+        metas_gerais_keys: ["4_parceiros_plataforma","24mm_credito","5_transacoes_lance"],
+        metas_individuais: [],
+      },
+    ],
+    metas_individuais_gerente: [
+      { meta:"Reduzir o ciclo de Code Review para no máximo 8h sem comprometer a estabilidade, mantendo o retrabalho pós-deploy abaixo de 10% e a aprovação de primeira no QA acima de 30%", status:"atrasada", valores:{...S_VAZIO} },
+      { meta:"Mitigar riscos operacionais assegurando Quality Gate de 60% na evolução do código e blindagem via testes automatizados para a totalidade (70%) dos novos fluxos críticos e os 3 principais fluxos críticos atuais", status:"atrasada", valores:{...S_VAZIO} },
+      { meta:"Implementar uma stack de observabilidade proativa que garanta alertas em até 5 minutos para os 5 fluxos mais críticos, atingindo cobertura geral de 40% do parque de serviços com observabilidade estruturada até Maio de 2026", status:"atrasada", valores:{...S_VAZIO} },
+      { meta:"Profissionalizar a Gestão de Incidentes migrando para o GLPI com SLAs definidos e 80% dos tickets categorizados, reduzindo em 5% a reincidência de erros e com análise de causa raiz obrigatória para 75% dos incidentes críticos", status:"atrasada", valores:{...S_VAZIO} },
+      { meta:"Desacoplar a camada de relatórios do ambiente produtivo, implementando estrutura de Data Warehouse e substituindo consultas via Slack por Dashboards de Performance em tempo real (H-1 ou Real-time)", status:"atrasada", valores:{...S_VAZIO} },
+    ],
+    label_ind_gerente: "Metas de Tecnologia",
+  },
+
+  // ── FLÁVIO ───────────────────────────────────────────────────────────
+  {
+    id: "flavio", nome: "Flavio Carlucci", cargo: "Gerente de Design", modo: "single",
+    times: [
+      {
+        nome:"Design", chave:"design",
+        metas_gerais_keys: ["60k_cotas","reduzir_erros","custo_mensageria","crm_mensageria","60k_leads","96k_receita","4_parceiros_plataforma","24mm_credito","taxa_abertura_8pct"],
+        metas_individuais: [
+          { meta:"Migrar plataforma para novo sistema de IA 2.0 (melhor raciocínio e menos alucinação) com insights e estrutura avançada de base de conhecimento, usar o chat só para transbordos", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Criar ferramentas de automação de melhorias para afinar prompts", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Criar e acompanhar prompt com foco em conversão em nova estrutura de base de conhecimento", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+    ],
+  },
+
+  // ── BRUNO ────────────────────────────────────────────────────────────
+  {
+    id: "bruno", nome: "Bruno Grandi", cargo: "Gerente de Novos Negócios", modo: "single",
+    times: [
+      {
+        nome:"Novos Negócios", chave:"novos",
+        metas_gerais_keys: ["60k_cotas","7_7k_novos_parceiros","alocar_296mm","60k_leads","96k_receita","4_parceiros_plataforma","24mm_credito","6_parceiros_investimento"],
+        metas_individuais: [
+          { meta:"Implementar metodologia e rotina de acompanhamento da performance de parceiros e reunião de acompanhamento e discussão de performances de parcerias", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Implementar metodologia e rotina de acompanhamento de andamento de projetos, demandas de parcerias e reports de evolução de iniciativas com parceiros, com fóruns semanais de discussão entre áreas relevantes", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Garantir o desenvolvimento do time de novos negócios no 1º semestre com ambas as analistas com nota acima da média da Consorciei e dentro da zona elegível a bônus", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+    ],
+  },
+
+  // ── PEDRO ────────────────────────────────────────────────────────────
+  {
+    id: "pedro", nome: "Pedro Lacava", cargo: "Gerente de Finanças e Pessoas", modo: "multi",
+    times: [
+      {
+        nome:"Finanças", chave:"financas",
+        metas_gerais_keys: ["fidc_proprietario"],
+        metas_individuais: [
+          { meta:"Fazer fechamento contábil até o 10º dia útil de todos os meses incluindo contas de saldo", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Fechar conciliação de maio no novo fluxo construído", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Não pagar multas por atraso de fevereiro a junho", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Conciliação de contas de saldo fechada semanalmente com identificação de cotas e montagem de carga de vendas / resgates", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Conciliação bancária 100% classificada diariamente", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Substituir o arquivo 2025 MBR por base de dados operacionais nos fechamentos de fevereiro a junho", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Atualização semanal de forecast de despesas", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Mapa de processos com prazos e donos até março / documentação de processos da área até abril", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+      {
+        nome:"Pessoas", chave:"pessoas",
+        metas_gerais_keys: [],
+        metas_individuais: [
+          { meta:"Nota média a partir de 4 na pesquisa de onboarding", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Nota a partir de 4 no eixo de Bem-estar e Infraestrutura na Pesquisa de Clima", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Nota a partir de 3,8 no eixo de Benefícios e Reconhecimento na Pesquisa de Clima", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Construção da Central de Pessoas com páginas individuais que agreguem contratos, infos pessoais, atestados, banco de horas, descrição das posições ocupadas, movimentações, gestores", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"CRM de pessoas no Slack", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Reduzir tempo de fechamento de vagas por nível de complexidade", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Nota de avaliação de rampagem em 60 dias a partir de 3,5", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"60% dos supervisores atingindo mais de 70% das metas", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Nota da Pesquisa de Clima a partir de 4,2", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"60% das pessoas atingindo mais de 70% das metas", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+    ],
+  },
+
+  // ── SIMONETTI ────────────────────────────────────────────────────────
+  {
+    id: "simonetti", nome: "Raphael Simonetti", cargo: "Gerente de Inovação", modo: "single",
+    times: [
+      {
+        nome:"Inovação", chave:"inovacao",
+        metas_gerais_keys: ["24mm_credito","6_parceiros_investimento","quitacao_desconto"],
+        metas_individuais: [
+          { meta:"Publicar o Consórcio Insight Report mensalmente a partir de Março/2026", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Assinar o contrato final de parceria estratégica com 1 parceiro até o final de Abr/26, incluindo ao menos 2 produtos e condições favoráveis de negociação", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+    ],
+  },
+
+  // ── JOÃO FERRAZ ──────────────────────────────────────────────────────
+  {
+    id: "joao", nome: "João Ferraz", cargo: "Responsável", modo: "multi",
+    times: [
+      {
+        nome:"Gestão", chave:"gestao_joao",
+        metas_gerais_keys: [],
+        metas_individuais: [
+          { meta:"60% das pessoas atingindo mais de 70% das metas", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Manter a nota média da avaliação da Semanal de Performance (2 por semestre) acima de 4,6", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Garantir a construção de materiais estratégicos claros, consistentes e úteis", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Garantir a construção dos materiais do Board e demonstrar domínio sobre os indicadores e atualizações das frentes de negócio de março a junho", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Garantir que os temas específicos de cada área sejam abordados mensalmente e criar acompanhamento de eficiência das áreas mensalmente", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+      {
+        nome:"Jurídico", chave:"juridico",
+        metas_gerais_keys: ["quitacao_desconto","fidc_proprietario"],
+        metas_individuais: [
+          { meta:"Nota acima de 8 em duas avaliações bimestrais realizadas pelos clientes internos do jurídico no respectivo trimestre", status:"atrasada", valores:{...S_VAZIO} },
+          { meta:"Contingência judicial superior a 50% para perda remota, inferior a 40% para perda possível e a 10% para perda provável, por área de direito (tributário, cível, trabalhista)", status:"atrasada", valores:{...S_VAZIO} },
+        ],
+      },
+    ],
+  },
+];
+
+// ════════════════════════════════════════════════════════════════════════
+//  ENGINE — não editar abaixo
+// ════════════════════════════════════════════════════════════════════════
+
+const TAG_LABEL = {
+  cx:"CX", gestao:"Gestão", fundos:"Gestão de Fundos", performance:"Performance",
+  transferencia:"Transferência", secundario_h:"Squad Secundário", secundario_l:"Squad Secundário",
+  plataforma:"Squad Plataforma", contempladas:"Squad Contempladas", vendas:"Squad Vendas",
+  financas:"Finanças", pessoas:"Pessoas", inovacao:"Inovação",
+  gestao_joao:"Gestão", juridico:"Jurídico", design:"Design", novos:"Novos Negócios",
+};
+const TAG_CLS = {
+  cx:"tag-cx", gestao:"tag-gestao", fundos:"tag-fundos", performance:"tag-performance",
+  transferencia:"tag-transferencia", secundario_h:"tag-secundario", secundario_l:"tag-secundario",
+  plataforma:"tag-plataforma", contempladas:"tag-contempladas", vendas:"tag-vendas",
+  financas:"tag-financas", pessoas:"tag-pessoas", inovacao:"tag-inovacao",
+  gestao_joao:"tag-gestao", juridico:"tag-juridico", design:"tag-design", novos:"tag-novos",
+};
+const S_MAP = {
+  avancada:{ icon:"⚡", cls:"s-av", label:"Avançada" },
+  ontrack: { icon:"◑",  cls:"s-on", label:"On Track" },
+  atrasada:{ icon:"⚠",  cls:"s-at", label:"Atrasada" },
+};
+
+function sIcon(s){ const st=S_MAP[s]||S_MAP.atrasada; return `<div class="si ${st.cls}" title="${st.label}">${st.icon}</div>`; }
+function tagHtml(times){ return (times||[]).map(t=>`<span class="tag ${TAG_CLS[t]||''}">${TAG_LABEL[t]||t}</span>`).join(""); }
+
+function valCls(v){
+  if(!v||v==="—") return "vz";
+  if(v==="TBD") return "vz";
+  if(v.startsWith("+")) return "vo";
+  if(v==="0%"||v.startsWith("0%/")) return "vo";
+  return "vb";
+}
+
+function cell(val, idx, free){
+  const fut = idx >= MES_ATUAL;
+  if(val===null||val===undefined) return `<td class="mc empty${fut?' fut':''}">—</td>`;
+  if(val==="TBD") return `<td class="mc tbd">TBD</td>`;
+  if(free) return `<td class="mc txtfree">${val}</td>`;
+  const lines=val.split("\n");
+  return `<td class="mc">${lines.map(l=>`<span class="vl ${valCls(l)}">${l}</span>`).join("")}</td>`;
+}
+
+function mHeaders(){
+  return MESES.map((m,i)=>{
+    const cur=i===MES_ATUAL-1, fut=i>=MES_ATUAL;
+    const lbl=cur?`${MESES_LABEL[i]}<sub style="font-size:8px;margin-left:2px;opacity:.7">Acum</sub>`:MESES_LABEL[i];
+    return `<th class="${cur?'cur':''}${fut?' fut':''}">${lbl}</th>`;
+  }).join("");
+}
+
+function countS(metas){
+  const c={total:metas.length,avancada:0,ontrack:0,atrasada:0};
+  metas.forEach(m=>{if(c[m.status]!==undefined)c[m.status]++;});
+  return c;
+}
+
+function summaryBar(metas){
+  const c=countS(metas);
+  const p=k=>c.total?Math.round(c[k]/c.total*100):0;
+  return `<div class="summary-bar">
+    <div class="summary-item"><div class="summary-num num-total">${c.total}</div><div class="summary-label">Total</div></div>
+    <div class="summary-item"><div class="summary-num num-avancada">${c.avancada}<span class="summary-pct">(${p('avancada')}%)</span></div><div class="summary-label">⚡ Avançadas</div></div>
+    <div class="summary-item"><div class="summary-num num-ontrack">${c.ontrack}<span class="summary-pct">(${p('ontrack')}%)</span></div><div class="summary-label">◑ On Track</div></div>
+    <div class="summary-item"><div class="summary-num num-atrasada">${c.atrasada}<span class="summary-pct">(${p('atrasada')}%)</span></div><div class="summary-label">⚠ Atrasadas</div></div>
+  </div>`;
+}
+
+function table(metas, timesFilter){
+  // timesFilter: array de chaves dos times do gerente — mostra só essas tags.
+  // null = sem tags.
+  if(!metas.length) return `<div class="empty-metas">Sem metas cadastradas</div>`;
+  const rows=metas.map(g=>{
+    let tagsEl = "";
+    if(timesFilter && g.times && g.times.length){
+      const filtered = g.times.filter(t => timesFilter.includes(t));
+      if(filtered.length) tagsEl = `<div class="tags">${tagHtml(filtered)}</div>`;
+    }
+    return `<tr class="goal-row">
+      <td><div class="meta-text">${g.meta}</div>${tagsEl}</td>
+      ${MESES.map((m,i)=>cell(g.valores[m],i,g.textoLivre)).join("")}
+      <td class="sc">${sIcon(g.status)}</td>
+    </tr>`;
+  }).join("");
+  return `<table class="goals-table"><thead><tr>
+    <th class="col-meta">Meta</th>${mHeaders()}<th>Status</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function getMetasGerais(keys){
+  return (keys||[]).map(k=>METAS_GERAIS_POOL[k]).filter(Boolean);
+}
+
+function divider(tipo){
+  const pill=tipo==="gerais"
+    ?`<div class="con-divider-pill pill-gerais">Metas Gerais</div>`
+    :`<div class="con-divider-pill pill-especificas">Metas de Time</div>`;
+  return `<div class="con-divider"><div class="con-divider-line"></div>${pill}<div class="con-divider-line"></div></div>`;
+}
+
+// Coleta todas as metas gerais únicas de todos os times do gerente
+function allMetasGerais(g){
+  const seen=new Set(), result=[];
+  (g.times||[]).forEach(t=>{
+    (t.metas_gerais_keys||[]).forEach(k=>{
+      if(!seen.has(k)){ seen.add(k); const m=METAS_GERAIS_POOL[k]; if(m) result.push(m); }
+    });
+  });
+  return result;
+}
+
+function buildManager(g){
+  if(g.modo==="single"){
+    const t=g.times[0];
+    const gerais=getMetasGerais(t.metas_gerais_keys);
+    const indiv=t.metas_individuais||[];
+    const todas=[...gerais,...indiv];
+    const tFilter = t.metas_gerais_keys.length ? [t.chave] : null;
+    return `${summaryBar(todas)}
+      ${gerais.length?divider("gerais")+""+table(gerais,null):""}
+      ${indiv.length?divider("especificas")+""+table(indiv,null):""}`;
+  }
+
+  // MULTI — 3 abas
+  const allG=allMetasGerais(g);
+
+  // Aba 1: todas as metas gerais
+  const managerTimeKeys = g.times.map(t=>t.chave);
+  const tab1=`${summaryBar(allG)}${table(allG,managerTimeKeys)}
+    ${g.metas_individuais_gerente?`<div class="section-label">${g.label_ind_gerente||"Metas Individuais do Time"}</div>${summaryBar(g.metas_individuais_gerente)}${table(g.metas_individuais_gerente,null)}`:""}`;
+
+  // Aba 2: metas individuais por time
+  const tab2=g.times.map(t=>{
+    const indiv=t.metas_individuais||[];
+    return `<div class="section-label">${t.nome}</div>
+      ${indiv.length?summaryBar(indiv)+table(indiv,null):`<div class="empty-metas">Sem metas individuais</div>`}`;
+  }).join("")+
+  (g.metas_individuais_gerente?`<div class="section-label">${g.label_ind_gerente||"Metas Individuais do Time"}</div>${summaryBar(g.metas_individuais_gerente)}${table(g.metas_individuais_gerente,null)}`:"");
+
+  // Aba 3: consolidado por time
+  const tab3=g.times.map(t=>{
+    const gerais=getMetasGerais(t.metas_gerais_keys);
+    const indiv=t.metas_individuais||[];
+    const todas=[...gerais,...indiv];
+    return `<div class="section-label">${t.nome}</div>
+      ${summaryBar(todas)}
+      ${gerais.length?divider("gerais")+table(gerais,null):""}
+      ${indiv.length?divider("especificas")+table(indiv,null):""}`;
+  }).join("");
+
+  return `
+    <div class="tab-panel active" id="${g.id}-t1">${tab1}</div>
+    <div class="tab-panel"        id="${g.id}-t2">${tab2}</div>
+    <div class="tab-panel"        id="${g.id}-t3">${tab3}</div>`;
+}
+
+function switchTab(gId, n){
+  [1,2,3].forEach(i=>{
+    const el=document.getElementById(`${gId}-t${i}`);
+    if(el) el.classList.toggle("active", i===n);
+  });
+  document.querySelectorAll(`#view-${gId} .tab-btn`).forEach((b,i)=>b.classList.toggle("active",i===n-1));
+}
+
+function switchManager(id){
+  document.querySelectorAll(".manager-view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll(".sel-btn").forEach(b=>b.classList.remove("active"));
+  const view=document.getElementById(`view-${id}`);
+  if(view) view.classList.add("active");
+  const btn=document.getElementById(`sel-${id}`);
+  if(btn) btn.classList.add("active");
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const selBar=document.getElementById("sel-bar");
+  const views =document.getElementById("manager-views");
+  const headerTabs=document.getElementById("header-tabs");
+
+  GERENTES.forEach((g,gi)=>{
+    // Selector pill
+    const pill=document.createElement("button");
+    pill.className="sel-btn"+(gi===0?" active":"");
+    pill.id=`sel-${g.id}`;
+    pill.textContent=g.nome.split(" ")[0]; // primeiro nome
+    pill.onclick=()=>switchManager(g.id);
+    selBar.appendChild(pill);
+
+    // Manager view
+    const view=document.createElement("div");
+    view.className="manager-view"+(gi===0?" active":"");
+    view.id=`view-${g.id}`;
+
+    // Header info via data attrs
+    view.dataset.nome=g.nome;
+    view.dataset.cargo=g.cargo;
+    view.dataset.modo=g.modo;
+
+    if(g.modo==="multi"){
+      view.innerHTML=buildManager(g);
+    } else {
+      view.innerHTML=buildManager(g);
+    }
+    views.appendChild(view);
+  });
+
+  // Header reactive
+  const hName =document.getElementById("h-name");
+  const hRole =document.getElementById("h-role");
+  const hTabs =document.getElementById("header-tabs");
+
+  function updateHeader(g){
+    hName.textContent=g.nome;
+    hRole.textContent=g.cargo;
+    hTabs.innerHTML="";
+    if(g.modo==="multi"){
+      ["Metas Gerais","Metas de Time","Consolidado por Time"].forEach((lbl,i)=>{
+        const b=document.createElement("button");
+        b.className="tab-btn"+(i===0?" active":"");
+        b.textContent=lbl;
+        b.onclick=()=>switchTab(g.id,i+1);
+        hTabs.appendChild(b);
+      });
+    } else {
+      const sp=document.createElement("span");
+      sp.style.cssText="color:rgba(255,255,255,0.45);font-size:13px;align-self:center;padding-left:4px;";
+      sp.textContent="Visão Consolidada";
+      hTabs.appendChild(sp);
+    }
+  }
+
+  // Patch switchManager to also update header
+  window._switchManager=switchManager;
+  window.switchManager=function(id){
+    _switchManager(id);
+    const g=GERENTES.find(x=>x.id===id);
+    if(g) updateHeader(g);
+  };
+
+  updateHeader(GERENTES[0]);
+});
+</script>
+
+<!-- ── SELECTOR BAR ── -->
+<div class="selector-bar">
+  <span class="selector-label">Gerente</span>
+  <div id="sel-bar" style="display:flex;gap:6px;align-items:center;"></div>
+</div>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-semestre">1º Semestre de 2026</div>
+    <div class="header-title">Metas</div>
+  </div>
+  <div class="header-tabs" id="header-tabs"></div>
+  <div class="header-right">
+    <div class="header-role" id="h-role"></div>
+    <div class="header-name" id="h-name"></div>
+  </div>
+</div>
+
+<!-- ── VIEWS ── -->
+<div class="container">
+  <div id="manager-views"></div>
+</div>
+
+</body>
+</html>
